@@ -149,6 +149,13 @@ except ImportError:
     pass
 
 
+# rest_condition is optional. This is mainly for the test suite.
+try:
+    import rest_condition
+except ImportError:
+    rest_condition = None
+
+
 # PATCH method is not implemented by Django
 if 'patch' not in View.http_method_names:
     View.http_method_names = View.http_method_names + ['patch']

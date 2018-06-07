@@ -12,7 +12,7 @@ from rest_framework import (
     HTTP_HEADER_ENCODING, authentication, generics, permissions, serializers,
     status, views
 )
-from rest_framework.compat import guardian
+from rest_framework.compat import guardian, rest_condition
 from rest_framework.filters import DjangoObjectPermissionsFilter
 from rest_framework.routers import DefaultRouter
 from rest_framework.test import APIRequestFactory
@@ -519,3 +519,21 @@ class CustomPermissionsTests(TestCase):
             detail = response.data.get('detail')
             self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
             self.assertEqual(detail, self.custom_message)
+
+
+@unittest.skipUnless(rest_condition, 'rest_condition not installed')
+class RestConditionTests(TestCase):
+    def setUp(self):
+        BasicModel(text='foo').save()
+        User.objects.create_user('username', 'username@example.com', 'password')
+        credentials = basic_auth_header('username', 'password')
+        self.request = factory.get('/1', format='json', HTTP_AUTHORIZATION=credentials)
+
+        class DeniedObjectUnlessIsAdminUserView(PermissionInstanceView):
+            permission_classes = (rest_condition.Or(BasicObjectPerm, permissions.IsAdminUser),)
+
+        self.view = DeniedObjectUnlessIsAdminUserView.as_view()
+
+    def test_permission_denied_is_admin_should(self):
+        response = self.view(self.request, pk=1)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
