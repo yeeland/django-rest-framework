@@ -25,7 +25,7 @@ class BasePermission(object):
         """
         Return `True` if permission is granted, `False` otherwise.
         """
-        return True
+        return self.has_permission(request, view)
 
 
 class AllowAny(BasePermission):
